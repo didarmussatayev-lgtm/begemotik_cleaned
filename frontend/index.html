@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Заполнение согласия — Бегемотик</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="top-bar">
+      <div></div>
+      <div class="lang-switcher">
+        <button type="button" id="langRU" class="lang-btn active">RU</button>
+        <button type="button" id="langKZ" class="lang-btn">KZ</button>
+      </div>
+    </div>
+    <h1 id="clinicName">ТОО "Детский медицинский центр "Бегемотик"</h1>
+    <button type="button" id="startBtn" class="btn-submit" data-i18n="start">НАЧАТЬ</button>
+  </div>
+
+  <div id="formModal" class="modal" style="display:none;">
+    <div class="modal-card modal-large">
+      <div class="modal-header">
+        <h2 id="stepTitle" data-i18n="formTitle">Заполнение согласия</h2>
+        <button type="button" id="closeModal" class="close-btn" aria-label="Закрыть">&times;</button>
+      </div>
+
+      <form id="consentForm" novalidate>
+        <div id="step1" class="form-step">
+          <h3 data-i18n="sectionPatient">Основная информация о пациенте</h3>
+          <div class="form-group">
+            <label for="iin"><span data-i18n="labelIIN">ИИН</span> <span class="required">*</span></label>
+            <input type="text" id="iin" placeholder="930715350877" maxlength="12" inputmode="numeric" />
+            <div id="iin-error" class="error-text"></div>
+          </div>
+          <div class="form-group">
+            <label for="surname"><span data-i18n="labelSurname">Фамилия</span> <span class="required">*</span></label>
+            <input type="text" id="surname" placeholder="Ахметов" autocomplete="family-name" />
+            <div id="surname-error" class="error-text"></div>
+          </div>
+          <div class="form-group">
+            <label for="name"><span data-i18n="labelName">Имя</span> <span class="required">*</span></label>
+            <input type="text" id="name" placeholder="Серік" autocomplete="given-name" />
+            <div id="name-error" class="error-text"></div>
+          </div>
+          <div class="form-group">
+            <label for="last_name" data-i18n="labelLastName">Отчество (если имеется)</label>
+            <input type="text" id="last_name" placeholder="Арманович" autocomplete="additional-name" />
+            <div id="last_name-error" class="error-text"></div>
+          </div>
+          <div class="form-group">
+            <label for="gender"><span data-i18n="labelGender">Пол</span> <span class="required">*</span></label>
+            <select id="gender">
+              <option value="" data-i18n="genderPlaceholder">Выберите пол</option>
+              <option value="мужской" data-i18n="genderMale">мужской</option>
+              <option value="женский" data-i18n="genderFemale">женский</option>
+            </select>
+            <div id="gender-error" class="error-text"></div>
+          </div>
+          <div class="form-group">
+            <label for="birthdate"><span data-i18n="labelBirthdate">Дата рождения</span> <span class="required">*</span></label>
+            <input type="text" id="birthdate" placeholder="15.07.1993" maxlength="10" inputmode="numeric" />
+            <div id="birthdate-error" class="error-text"></div>
+          </div>
+          <div class="form-group">
+            <label for="phone"><span data-i18n="labelPhone">Телефон</span> <span class="required">*</span></label>
+            <input type="text" id="phone" class="phone-input" placeholder="+7 (747) 360-95-14" maxlength="18" autocomplete="tel" />
+            <div id="phone-error" class="error-text"></div>
+          </div>
+          <div class="form-group consent-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="hasKinship" />
+              <span data-i18n="labelHasKinship">Законный представитель пациента</span>
+            </label>
+          </div>
+          <div id="kinshipFields" style="display:none;">
+            <div class="form-group">
+              <label for="surname_kinship"><span data-i18n="labelSurnameKinship">Фамилия представителя</span> <span class="required">*</span></label>
+              <input type="text" id="surname_kinship" placeholder="Ахметова" />
+              <div id="surname_kinship-error" class="error-text"></div>
+            </div>
+            <div class="form-group">
+              <label for="name_kinship"><span data-i18n="labelNameKinship">Имя представителя</span> <span class="required">*</span></label>
+              <input type="text" id="name_kinship" placeholder="Айгерим" />
+              <div id="name_kinship-error" class="error-text"></div>
+            </div>
+            <div class="form-group">
+              <label for="last_name_kinship" data-i18n="labelLastNameKinship">Отчество представителя (если имеется)</label>
+              <input type="text" id="last_name_kinship" placeholder="Арманқызы" />
+              <div id="last_name_kinship-error" class="error-text"></div>
+            </div>
+            <div class="form-group">
+              <label for="degree_of_kinship"><span data-i18n="labelDegreeKinship">Степень родства</span> <span class="required">*</span></label>
+              <select id="degree_of_kinship">
+                <option value="" data-i18n="degreeKinshipPlaceholder">Выберите степень родства</option>
+                <option value="ребенок" data-i18n="degreeKinshipChild">ребенок</option>
+                <option value="лицо, чьим законным представителем я являюсь" data-i18n="degreeKinshipRep">лицо, чьим законным представителем я являюсь</option>
+              </select>
+              <div id="degree_of_kinship-error" class="error-text"></div>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="button" id="nextStep1" class="btn-submit" data-i18n="btnNext">ДАЛЕЕ</button>
+          </div>
+        </div>
+        <div id="step2" class="form-step" style="display:none;">
+          <div class="form-group consent-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="hasAllergy" />
+              <span data-i18n="labelHasAllergy">Есть аллергия</span>
+            </label>
+          </div>
+          <div id="allergyField" style="display:none;">
+            <div class="form-group">
+              <label for="allergyText"><span data-i18n="labelAllergyText">Укажите аллергию</span> <span class="required">*</span></label>
+              <textarea id="allergyText" rows="3" placeholder="Пенициллин, латекс..."></textarea>
+              <div id="allergyText-error" class="error-text"></div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="procedure"><span data-i18n="labelProcedure">Проводимые процедуры</span> <span class="required">*</span></label>
+            <input type="text" id="procedure" placeholder="Укажите процедуру" />
+            <div id="procedure-error" class="error-text"></div>
+          </div>
+          <div class="form-actions dual">
+            <button type="button" id="backStep2" class="btn-secondary" data-i18n="btnBack">НАЗАД</button>
+            <button type="button" id="nextStep2" class="btn-submit" data-i18n="btnNext">ДАЛЕЕ</button>
+          </div>
+        </div>
+        <div id="step3" class="form-step" style="display:none;">
+          <div class="form-group">
+            <label><span data-i18n="labelSignature">Подпись</span> <span class="required">*</span></label>
+            <p class="hint" data-i18n="hintSignature">Нарисуйте подпись в поле ниже</p>
+            <canvas id="signatureCanvas"></canvas>
+            <div id="signature-error" class="error-text"></div>
+            <div class="signature-actions">
+              <button type="button" id="clearSignature" class="btn-secondary" data-i18n="btnClearSig">Очистить</button>
+            </div>
+          </div>
+          <div class="form-group consent-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="consentFacsimile" />
+              <span data-i18n="labelConsentFacsimile">Даю согласие на использование факсимиле</span>
+            </label>
+          </div>
+          <div class="form-group consent-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="consentPersonal" />
+              <span data-i18n="labelConsentPersonal">Даю согласие на сбор персональных данных</span>
+            </label>
+          </div>
+          <div class="form-actions triple">
+            <button type="button" id="backStep3" class="btn-secondary" data-i18n="btnBack">НАЗАД</button>
+            <button type="submit" id="finishBtn" class="btn-submit" data-i18n="btnSign">ПОДПИСАТЬ</button>
+          </div>
+        </div>
+      </form>
+      <div id="errorMessage" class="alert alert-error" style="display:none;"></div>
+    </div>
+  </div>
+
+  <div id="loadingModal" class="modal" style="display:none;">
+    <div class="modal-card">
+      <div class="spinner"></div>
+      <h3 data-i18n="loadingTitle">Формируем соглашение…</h3>
+      <p data-i18n="loadingSubtitle">Обычно это занимает меньше минуты</p>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

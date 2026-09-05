@@ -44,7 +44,13 @@ static_admin_dir = Path(__file__).parent / "static_admin"
 if static_admin_dir.exists():
     app.mount("/admin", StaticFiles(directory=str(static_admin_dir), html=True), name="admin")
 
-
+@app.get("/api/v1/debug/static-admin")
+def debug_static_admin():
+    return {
+        "static_admin_dir": str(static_admin_dir),
+        "exists": static_admin_dir.exists(),
+        "contents": [f.name for f in static_admin_dir.iterdir()] if static_admin_dir.exists() else [],
+    }
 @app.on_event("startup")
 async def on_startup():
     agreements_db.init_db()

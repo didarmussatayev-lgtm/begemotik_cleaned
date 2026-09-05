@@ -1,1 +1,211 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Подписанные согласия — Admin</title>
+<style>
+  :root { --border: #e2e5ea; --accent: #1E4FA3; --text: #1c1f26; --muted: #6b7280; }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; background: #f7f8fa; color: var(--text); }
+  header { padding: 20px 28px; background: #fff; border-bottom: 1px solid var(--border); }
+  h1 { font-size: 20px; margin: 0; }
+  main { padding: 20px 28px; }
+  .panel { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 18px; margin-bottom: 16px; }
+  .filters { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label { font-size: 12px; color: var(--muted); }
+  input[type="text"] { padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; min-width: 180px; }
+  button { padding: 9px 16px; border-radius: 6px; border: 1px solid var(--border); background: #fff; cursor: pointer; font-size: 14px; }
+  button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  button.danger { color: #b3261e; border-color: #f0c9c6; }
+  button:hover { filter: brightness(0.97); }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; }
+  tbody tr:hover { background: #fafbfc; }
+  .actions { display: flex; gap: 8px; }
+  .pagination { display: flex; align-items: center; gap: 8px; justify-content: flex-end; margin-top: 12px; }
+  .pagination span { font-size: 13px; color: var(--muted); }
+  .empty, .error { padding: 24px; text-align: center; color: var(--muted); }
+  .error { color: #b3261e; }
+</style>
+</head>
+<body>
+<header><h1>Подписанные согласия</h1></header>
+<main>
+  <div class="panel filters">
+    <div class="field">
+      <label for="fIin">ИИН</label>
+      <input type="text" id="fIin" placeholder="Введите ИИН" />
+    </div>
+    <div class="field">
+      <label for="fPhone">Номер телефона</label>
+      <input type="text" id="fPhone" placeholder="Введите телефон" />
+    </div>
+    <button class="primary" id="searchBtn">Поиск</button>
+    <button id="resetBtn">Сбросить фильтр</button>
+  </div>
 
+  <div class="panel" style="padding:0; overflow-x:auto;">
+    <table>
+      <thead>
+        <tr>
+          <th>ИИН</th>
+          <th>ФИО</th>
+          <th>Номер телефона</th>
+          <th>Процедура</th>
+          <th>Дата рождения</th>
+          <th>Дата и время подписания</th>
+          <th>Файл</th>
+          <th>Действие</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+    <div id="emptyState" class="empty" style="display:none;">Ничего не найдено</div>
+    <div id="errorState" class="error" style="display:none;"></div>
+  </div>
+
+  <div class="pagination">
+    <span id="totalLabel"></span>
+    <button id="prevBtn">‹</button>
+    <span id="pageLabel"></span>
+    <button id="nextBtn">›</button>
+  </div>
+</main>
+
+<script>
+// Same origin as this page — adjust if the dashboard is hosted separately
+// from the FastAPI backend.
+const API_BASE = '';
+
+let page = 1;
+const pageSize = 10;
+
+const els = {
+  iin: document.getElementById('fIin'),
+  phone: document.getElementById('fPhone'),
+  body: document.getElementById('tableBody'),
+  empty: document.getElementById('emptyState'),
+  error: document.getElementById('errorState'),
+  total: document.getElementById('totalLabel'),
+  pageLabel: document.getElementById('pageLabel'),
+  prevBtn: document.getElementById('prevBtn'),
+  nextBtn: document.getElementById('nextBtn'),
+};
+
+document.getElementById('searchBtn').addEventListener('click', () => { page = 1; load(); });
+document.getElementById('resetBtn').addEventListener('click', () => {
+  els.iin.value = '';
+  els.phone.value = '';
+  page = 1;
+  load();
+});
+els.prevBtn.addEventListener('click', () => { if (page > 1) { page -= 1; load(); } });
+els.nextBtn.addEventListener('click', () => { page += 1; load(); });
+
+async function load() {
+  els.error.style.display = 'none';
+  const params = new URLSearchParams({
+    iin: els.iin.value.trim(),
+    phone: els.phone.value.trim(),
+    page: String(page),
+    page_size: String(pageSize),
+  });
+
+  try {
+    // Browsers show their native Basic Auth prompt automatically on the
+    // first 401 from this endpoint — no custom login form needed.
+    const res = await fetch(`${API_BASE}/api/v1/admin/agreements?${params}`, {
+      credentials: 'include',
+    });
+    if (!res.ok) throw new Error(`Ошибка сервера (${res.status})`);
+    const data = await res.json();
+    render(data);
+  } catch (err) {
+    els.body.innerHTML = '';
+    els.empty.style.display = 'none';
+    els.error.style.display = 'block';
+    els.error.textContent = err.message || 'Не удалось загрузить данные';
+  }
+}
+
+function render(data) {
+  els.body.innerHTML = '';
+  els.empty.style.display = data.items.length ? 'none' : 'block';
+
+  for (const row of data.items) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${escapeHtml(row.iin)}</td>
+      <td>${escapeHtml(row.full_name)}</td>
+      <td>${escapeHtml(row.phone || '')}</td>
+      <td>${escapeHtml(row.procedure || '')}</td>
+      <td>${escapeHtml(formatDate(row.date_of_birth))}</td>
+      <td>${escapeHtml(formatDateTime(row.signed_at))}</td>
+      <td>
+        <button data-id="${row.agreement_id}" data-action="download">Скачать</button>
+      </td>
+      <td>
+        <div class="actions">
+          <button class="danger" data-id="${row.agreement_id}" data-action="delete">Удалить</button>
+        </div>
+      </td>
+    `;
+    els.body.appendChild(tr);
+  }
+
+  els.body.querySelectorAll('[data-action="download"]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      window.open(`${API_BASE}/api/v1/admin/agreements/${btn.dataset.id}/download?file_type=pdf`, '_blank');
+    });
+  });
+
+  els.body.querySelectorAll('[data-action="delete"]').forEach((btn) => {
+    btn.addEventListener('click', () => onDelete(btn.dataset.id));
+  });
+
+  els.total.textContent = `Кол-во записей: ${data.total}`;
+  const lastPage = Math.max(Math.ceil(data.total / pageSize), 1);
+  els.pageLabel.textContent = `${data.page} / ${lastPage}`;
+  els.prevBtn.disabled = data.page <= 1;
+  els.nextBtn.disabled = data.page >= lastPage;
+}
+
+async function onDelete(agreementId) {
+  if (!confirm('Удалить это согласие безвозвратно?')) return;
+  try {
+    const res = await fetch(`${API_BASE}/api/v1/admin/agreements/${agreementId}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+    if (!res.ok) throw new Error(`Ошибка сервера (${res.status})`);
+    load();
+  } catch (err) {
+    alert(err.message || 'Не удалось удалить запись');
+  }
+}
+
+function formatDate(value) {
+  if (!value) return '';
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? value : d.toLocaleDateString('ru-RU');
+}
+
+function formatDateTime(value) {
+  if (!value) return '';
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? value : d.toLocaleString('ru-RU');
+}
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[c]));
+}
+
+load();
+</script>
+</body>
+</html>

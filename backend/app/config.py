@@ -27,6 +27,11 @@ class Settings(BaseSettings):
     google_oauth_client_secret: str = ""
     google_oauth_refresh_token: str = ""
 
+    # --- Admin dashboard (list/download/delete signed agreements) ---
+    admin_username: str = ""
+    admin_password: str = ""
+    agreements_db_path: str = "agreements.db"
+
     @property
     def cors_origins_list(self) -> List[str]:
         """Return CORS origins as a list."""

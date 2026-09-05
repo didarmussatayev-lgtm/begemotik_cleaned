@@ -7,7 +7,7 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -18,14 +18,13 @@ from . import db as agreements_db
 from .docgen import convert_to_pdf, generate_begemotik_docx
 from .drive import build_patient_filename_base, upload_documents
 from .models import BegemotikAgreementRequest
-from .reminders import handle_incoming_whatsapp, start_scheduler
 
 logging.basicConfig(
     level=settings.log_level.upper(),
     format="%(asctime)s %(levelname)s %(name)s — %(message)s",
 )
 logger = logging.getLogger(__name__)
-logger.info("=== DEPLOY MARKER v4: begemotik model/docgen aligned ===")
+logger.info("=== DEPLOY MARKER v5: reminders removed, begemotik model/docgen aligned ===")
 
 TEMPLATE_FILENAME = "begemotik_template.docx"
 
@@ -48,15 +47,7 @@ if static_admin_dir.exists():
 
 @app.on_event("startup")
 async def on_startup():
-    start_scheduler()
     agreements_db.init_db()
-
-
-@app.post("/api/v1/whatsapp-webhook")
-async def whatsapp_webhook(request: Request):
-    payload = await request.json()
-    await handle_incoming_whatsapp(payload)
-    return {"status": "ok"}
 
 
 @app.get("/health")
@@ -65,8 +56,6 @@ def health() -> dict:
 
 
 def _split_uploaded_ids(uploaded_ids: dict[str, str]) -> tuple[str, str]:
-    """upload_documents() returns {filename: file_id}. docx and pdf share the
-    same stem, so tell them apart by extension."""
     docx_file_id = ""
     pdf_file_id = ""
     for name, file_id in uploaded_ids.items():
@@ -91,11 +80,6 @@ def _parse_birthdate_iso(birthdate: str) -> str:
 
 @app.post("/api/v1/agreements")
 async def create_agreement(body: BegemotikAgreementRequest):
-    """
-    Accept form data, generate DOCX+PDF, upload both to Google Drive,
-    record the agreement in the local DB for the admin dashboard, and
-    return the PDF to the client as a downloadable file.
-    """
     full_name = " ".join(filter(None, [body.surname, body.name, body.last_name]))
     agreement_id = f"{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{uuid.uuid4().hex[:8]}"
     logger.info("Processing agreement %s for %s", agreement_id, full_name)
@@ -149,7 +133,6 @@ async def create_agreement(body: BegemotikAgreementRequest):
             logger.exception("PDF conversion failed for agreement %s", agreement_id)
             raise HTTPException(status_code=500, detail=f"PDF conversion failed: {exc}") from exc
 
-        # Upload DOCX+PDF to Google Drive (best-effort — don't fail on Drive error)
         drive_error: str | None = None
         docx_file_id = ""
         pdf_file_id = ""
@@ -172,7 +155,6 @@ async def create_agreement(body: BegemotikAgreementRequest):
         else:
             logger.warning("GOOGLE_DRIVE_FOLDER_ID not set — skipping Drive upload")
 
-        # Record the agreement for the admin dashboard, even if Drive upload failed
         try:
             agreements_db.insert_agreement(
                 agreement_id=agreement_id,
@@ -213,7 +195,6 @@ async def create_agreement(body: BegemotikAgreementRequest):
 
 
 def _cleanup_background(tmp_dir: Path):
-    """Return a BackgroundTask that removes the temp directory."""
     from starlette.background import BackgroundTask
 
     def _cleanup():

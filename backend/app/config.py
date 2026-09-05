@@ -30,7 +30,9 @@ class Settings(BaseSettings):
     # --- Admin dashboard (list/download/delete signed agreements) ---
     admin_username: str = ""
     admin_password: str = ""
-    agreements_db_path: str = "agreements.db"
+    # Postgres connection string, e.g. postgres://user:password@host:5432/dbname
+    # (append ?sslmode=require if your provider needs it for external connections)
+    database_url: str = ""
 
     @property
     def cors_origins_list(self) -> List[str]:

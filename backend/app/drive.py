@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import io
 import logging
 import re
 import unicodedata
@@ -12,7 +13,7 @@ try:
     from google.auth.transport.requests import Request
     from google.oauth2.credentials import Credentials as OAuthCredentials
     from googleapiclient.discovery import build
-    from googleapiclient.http import MediaFileUpload
+    from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
     _DRIVE_AVAILABLE = True
 except ImportError:
     logger.warning("google-api-python-client not installed; Drive upload disabled")
@@ -27,13 +28,11 @@ def _build_service(oauth_credentials_info: dict):
     """
     if not _DRIVE_AVAILABLE:
         raise RuntimeError("Google API client library is not installed")
-
     if not oauth_credentials_info:
         raise RuntimeError(
             "No Google Drive credentials found. Set GOOGLE_OAUTH_CLIENT_ID / "
             "GOOGLE_OAUTH_CLIENT_SECRET / GOOGLE_OAUTH_REFRESH_TOKEN."
         )
-
     creds = OAuthCredentials(
         token=None,
         refresh_token=oauth_credentials_info["refresh_token"],
@@ -100,3 +99,31 @@ def upload_documents(
         logger.info("Uploaded file to Drive as %s (id=%s)", file_name, uploaded.get("id"))
         uploaded_ids[file_name] = uploaded.get("id")
     return uploaded_ids
+
+
+def get_file_bytes(file_id: str, oauth_credentials_info: dict) -> bytes:
+    """Download a file's raw bytes from Drive by id. Used by the admin
+    dashboard's download button so it works regardless of who is logged
+    into the browser — the server does the fetching with its own service
+    credentials, not the admin's personal Google session."""
+    if not file_id:
+        raise RuntimeError("No Drive file id provided")
+
+    service = _build_service(oauth_credentials_info)
+    request = service.files().get_media(fileId=file_id)
+    buffer = io.BytesIO()
+    downloader = MediaIoBaseDownload(buffer, request)
+    done = False
+    while not done:
+        _, done = downloader.next_chunk()
+    return buffer.getvalue()
+
+
+def delete_file(file_id: str, oauth_credentials_info: dict) -> None:
+    """Permanently delete a file from Drive by id. Raises on failure so the
+    caller can decide whether it's safe to also drop the DB record."""
+    if not file_id:
+        return
+    service = _build_service(oauth_credentials_info)
+    service.files().delete(fileId=file_id).execute()
+    logger.info("Deleted Drive file %s", file_id)

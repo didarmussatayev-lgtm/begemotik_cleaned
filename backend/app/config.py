@@ -30,6 +30,12 @@ class Settings(BaseSettings):
     # --- Admin dashboard (list/download/delete signed agreements) ---
     admin_username: str = ""
     admin_password: str = ""
+
+    # Secret used to sign admin session cookies. Set this explicitly in
+    # production — if left empty, admin.py falls back to deriving one from
+    # admin_username/admin_password, which is fine but less ideal.
+    session_secret: str = ""
+
     # Postgres connection string, e.g. postgres://user:password@host:5432/dbname
     # (append ?sslmode=require if your provider needs it for external connections)
     database_url: str = ""

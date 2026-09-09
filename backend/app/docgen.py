@@ -155,7 +155,7 @@ def generate_begemotik_docx(
         "last_name_kinship": last_name_kinship, "degree_of_kinship": degree_of_kinship,
         "name_surname_kinship": name_surname_kinship, "signature_kinship": signature_kinship,
         "patient": patient_field, "kinship": kinship_field,
-        "allergy": allergy_value, "no_allergy": no_allergy_value,
+        "allergy": allergy_value, "no_allergy": no_allergy_value, "has_allergy": bool(allergy_value),
         "procedure": procedure,
         "date": now.strftime("%d.%m.%Y"), "full_date": now.strftime("%d.%m.%Y %H:%M"),
         "agreement_id": agreement_id,

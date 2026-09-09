@@ -92,7 +92,7 @@ async def create_agreement(body: BegemotikAgreementRequest):
 
     tmp_dir = Path(tempfile.mkdtemp(prefix="agreement_"))
     try:
-        template_path = Path(__file__).parent / "templates" / TEMPLATE_FILENAME
+        template_path = Path(__file__).parent / TEMPLATE_FILENAME
         if not template_path.exists():
             logger.error("Template not found at %s", template_path)
             raise HTTPException(

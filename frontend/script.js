@@ -37,6 +37,30 @@ const I18N = {
     btnSign: 'ПОДПИСАТЬ',
     loadingTitle: 'Формируем соглашение…',
     loadingSubtitle: 'Обычно это занимает меньше минуты',
+    // procedures
+    procCheckup: 'Проф.осмотр',
+    procPediatricCheckup: 'Педиатрический чекап',
+    procTests: 'Анализы',
+    procCardioCheckup: 'Кардио чекап',
+    procUltrasound: 'УЗИ',
+    procSurgery: 'Операция',
+    procDoctorPediatrician: 'Прием врача: педиатр',
+    procDoctorSurgeon: 'Прием врача: хирург',
+    procDoctorNeurologist: 'Прием врача: невролог',
+    procDoctorOrthopedist: 'Прием врача: ортопед',
+    procDoctorCardiologist: 'Прием врача: кардиолог',
+    procDoctorUrologist: 'Прием врача: уролог',
+    procDoctorOphthalmologist: 'Прием врача: офтальмолог',
+    procDoctorENT: 'Прием врача: лор врач',
+    procDoctorRheumatologist: 'Прием врача: ревматолог',
+    procDoctorAllergist: 'Прием врача: аллерголог',
+    procDoctorInfectiologist: 'Прием врача: инфекционист',
+    procDoctorPulmonologist: 'Прием врача: пульмонолог',
+    procDoctorImmunologist: 'Прием врача: иммунолог',
+    procCircumcision: 'Обрезание',
+    procSutureRemoval: 'Снятие швов',
+    procIrrigation: 'Промывание',
+    procFrenulumTrim: 'Подрезание уздечки',
     // validation errors
     errIINRequired: 'Введите ИИН',
     errIINFormat: 'ИИН должен содержать 12 цифр',
@@ -53,7 +77,7 @@ const I18N = {
     errKinshipNameRequired: 'Введите имя представителя',
     errDegreeRequired: 'Выберите степень родства',
     errAllergyRequired: 'Укажите аллергию',
-    errProcedureRequired: 'Укажите процедуру',
+    errProcedureRequired: 'Выберите хотя бы одну процедуру',
     errSignatureRequired: 'Нарисуйте подпись',
   },
   kz: {
@@ -91,6 +115,30 @@ const I18N = {
     btnSign: 'ҚОЛ ҚОЮ',
     loadingTitle: 'Келісімді дайындаудамыз…',
     loadingSubtitle: 'Бұл бір минуттан аз уақытты алады',
+    // procedures
+    procCheckup: 'Профилактикалық тексеру',
+    procPediatricCheckup: 'Педиатриялық чекап',
+    procTests: 'Талдаулар',
+    procCardioCheckup: 'Кардио чекап',
+    procUltrasound: 'УДЗ (ультрадыбыстық зерттеу)',
+    procSurgery: 'Операция',
+    procDoctorPediatrician: 'Дәрігер қабылдауы: педиатр',
+    procDoctorSurgeon: 'Дәрігер қабылдауы: хирург',
+    procDoctorNeurologist: 'Дәрігер қабылдауы: невролог',
+    procDoctorOrthopedist: 'Дәрігер қабылдауы: ортопед',
+    procDoctorCardiologist: 'Дәрігер қабылдауы: кардиолог',
+    procDoctorUrologist: 'Дәрігер қабылдауы: уролог',
+    procDoctorOphthalmologist: 'Дәрігер қабылдауы: офтальмолог',
+    procDoctorENT: 'Дәрігер қабылдауы: лор дәрігері',
+    procDoctorRheumatologist: 'Дәрігер қабылдауы: ревматолог',
+    procDoctorAllergist: 'Дәрігер қабылдауы: аллерголог',
+    procDoctorInfectiologist: 'Дәрігер қабылдауы: инфекционист',
+    procDoctorPulmonologist: 'Дәрігер қабылдауы: пульмонолог',
+    procDoctorImmunologist: 'Дәрігер қабылдауы: иммунолог',
+    procCircumcision: 'Сүндетке отырғызу',
+    procSutureRemoval: 'Тігістерді алу',
+    procIrrigation: 'Шаю',
+    procFrenulumTrim: 'Жүгеншені кесу',
     errIINRequired: 'ЖСН енгізіңіз',
     errIINFormat: 'ЖСН 12 саннан тұруы тиіс',
     errSurnameRequired: 'Тегіңізді енгізіңіз',
@@ -106,7 +154,7 @@ const I18N = {
     errKinshipNameRequired: 'Өкілдің атын енгізіңіз',
     errDegreeRequired: 'Туыстық дәрежесін таңдаңыз',
     errAllergyRequired: 'Аллергияны көрсетіңіз',
-    errProcedureRequired: 'Процедураны көрсетіңіз',
+    errProcedureRequired: 'Кемінде бір процедураны таңдаңыз',
     errSignatureRequired: 'Қол қойыңыз',
   },
 };
@@ -209,6 +257,13 @@ function initListeners() {
     input.addEventListener('input', handlePhoneInput);
   });
 
+  document.querySelectorAll('.procedure-checkbox').forEach((checkbox) => {
+    checkbox.addEventListener('change', () => {
+      const errorEl = document.getElementById('procedure-error');
+      if (errorEl && getSelectedProcedures().length > 0) errorEl.textContent = '';
+    });
+  });
+
   document.getElementById('consentForm')?.addEventListener('submit', handleSubmit);
 }
 
@@ -220,6 +275,8 @@ function resetWizardState() {
   document.getElementById('errorMessage').textContent = '';
   toggleKinshipFields();
   toggleAllergyField();
+  const procedureError = document.getElementById('procedure-error');
+  if (procedureError) procedureError.textContent = '';
 }
 
 function showStep(step) {
@@ -251,6 +308,10 @@ function setFieldError(inputId, errorId, message) {
 
 function validateCyrillic(value) {
   return /^[А-Яа-яЁёӘәҒғҚқҢңӨөҰұҮүҺһІі\s\-]+$/.test(value);
+}
+
+function getSelectedProcedures() {
+  return Array.from(document.querySelectorAll('.procedure-checkbox:checked')).map((el) => el.value);
 }
 
 function validateStep1() {
@@ -321,9 +382,14 @@ function validateStep2() {
     setFieldError('allergyText', 'allergyText-error', '');
   }
 
-  const procedure = document.getElementById('procedure')?.value.trim() ?? '';
-  if (!procedure) { setFieldError('procedure', 'procedure-error', t('errProcedureRequired')); ok = false; }
-  else setFieldError('procedure', 'procedure-error', '');
+  const selectedProcedures = getSelectedProcedures();
+  const procedureError = document.getElementById('procedure-error');
+  if (selectedProcedures.length === 0) {
+    if (procedureError) procedureError.textContent = t('errProcedureRequired');
+    ok = false;
+  } else {
+    if (procedureError) procedureError.textContent = '';
+  }
 
   return ok;
 }
@@ -502,7 +568,7 @@ async function handleSubmit(e) {
     degree_of_kinship: hasKinship ? document.getElementById('degree_of_kinship').value : '',
     has_allergy: hasAllergy,
     allergy_text: hasAllergy ? allergyText : '',
-    procedure: document.getElementById('procedure').value.trim(),
+    procedure: getSelectedProcedures().join(', '),
     signature_base64: getSignatureBase64(),
     consent_facsimile: document.getElementById('consentFacsimile')?.checked ?? false,
     consent_personal_data: document.getElementById('consentPersonal')?.checked ?? false,
@@ -554,4 +620,3 @@ function showLoadingModal() {
 function hideLoadingModal() {
   document.getElementById('loadingModal').style.display = 'none';
 }
-

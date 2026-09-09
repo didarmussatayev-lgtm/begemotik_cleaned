@@ -160,6 +160,36 @@ textarea.error {
   margin-top: 2px;
 }
 
+/* Procedure checklist */
+.procedure-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 280px;
+  overflow-y: auto;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 14px;
+  background: #f8fafc;
+}
+
+.procedure-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: normal;
+  font-size: 15px;
+  cursor: pointer;
+  margin-bottom: 0;
+}
+
+.procedure-item input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
 button {
   border: 0;
   border-radius: 8px;
@@ -296,4 +326,3 @@ button:disabled {
     grid-template-columns: 1fr;
   }
 }
-

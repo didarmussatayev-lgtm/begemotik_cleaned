@@ -1,11 +1,16 @@
 from __future__ import annotations
 
+import base64
+import hashlib
+import hmac
+import json
 import logging
 import secrets
+import time
+import urllib.parse
 
-from fastapi import APIRouter, Depends, HTTPException, Query
-from fastapi.responses import Response
-from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Query, Response
+from pydantic import BaseModel
 
 from . import db, drive
 from .config import settings
@@ -13,35 +18,103 @@ from .config import settings
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/admin", tags=["admin"])
-security = HTTPBasic()
 
 _MEDIA_TYPES = {
     "pdf": "application/pdf",
     "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 }
 
+SESSION_COOKIE_NAME = "admin_session"
+SESSION_MAX_AGE_SECONDS = 8 * 60 * 60  # 8 hours
 
-def require_admin(credentials: HTTPBasicCredentials = Depends(security)) -> str:
+# Prefer a dedicated secret from env (settings.session_secret) if you add one;
+# falls back to deriving from admin credentials so this works without any
+# extra configuration.
+_SESSION_SECRET = (
+    getattr(settings, "session_secret", None)
+    or f"{settings.admin_username}:{settings.admin_password}"
+).encode()
+
+
+def _b64encode(data: bytes) -> str:
+    return base64.urlsafe_b64encode(data).rstrip(b"=").decode()
+
+
+def _b64decode(data: str) -> bytes:
+    padding = "=" * (-len(data) % 4)
+    return base64.urlsafe_b64decode(data + padding)
+
+
+def create_session_token(username: str) -> str:
+    payload = json.dumps({"u": username, "exp": time.time() + SESSION_MAX_AGE_SECONDS}).encode()
+    signature = hmac.new(_SESSION_SECRET, payload, hashlib.sha256).digest()
+    return f"{_b64encode(payload)}.{_b64encode(signature)}"
+
+
+def verify_session_token(token: str) -> bool:
+    try:
+        payload_b64, sig_b64 = token.split(".", 1)
+        payload = _b64decode(payload_b64)
+        signature = _b64decode(sig_b64)
+        expected_sig = hmac.new(_SESSION_SECRET, payload, hashlib.sha256).digest()
+        if not hmac.compare_digest(signature, expected_sig):
+            return False
+        data = json.loads(payload)
+        return float(data.get("exp", 0)) > time.time()
+    except Exception:
+        return False
+
+
+def require_admin_session(admin_session: str | None = Cookie(default=None)) -> str:
     if not settings.admin_username or not settings.admin_password:
-        # Fail closed: if these aren't configured, nobody gets in rather than
-        # everybody getting in.
         logger.error("admin_username/admin_password not configured")
         raise HTTPException(status_code=503, detail="Admin access is not configured")
+    if not admin_session or not verify_session_token(admin_session):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    return "admin"
 
-    user_ok = secrets.compare_digest(credentials.username, settings.admin_username)
-    pass_ok = secrets.compare_digest(credentials.password, settings.admin_password)
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+
+@router.post("/login")
+def login(body: LoginRequest, response: Response):
+    if not settings.admin_username or not settings.admin_password:
+        raise HTTPException(status_code=503, detail="Admin access is not configured")
+
+    user_ok = secrets.compare_digest(body.username, settings.admin_username)
+    pass_ok = secrets.compare_digest(body.password, settings.admin_password)
     if not (user_ok and pass_ok):
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid credentials",
-            headers={"WWW-Authenticate": "Basic"},
-        )
-    return credentials.username
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    token = create_session_token(body.username)
+    response.set_cookie(
+        key=SESSION_COOKIE_NAME,
+        value=token,
+        max_age=SESSION_MAX_AGE_SECONDS,
+        httponly=True,
+        secure=True,
+        samesite="lax",
+    )
+    return {"status": "ok"}
+
+
+@router.post("/logout")
+def logout(response: Response):
+    response.delete_cookie(SESSION_COOKIE_NAME)
+    return {"status": "ok"}
+
+
+@router.get("/me")
+def me(_: str = Depends(require_admin_session)):
+    return {"status": "ok"}
 
 
 @router.get("/agreements")
 def list_agreements(
-    _: str = Depends(require_admin),
+    _: str = Depends(require_admin_session),
     company: str = Query("", description="Exact match on company name"),
     iin: str = Query("", description="Substring match on IIN"),
     phone: str = Query("", description="Substring match on phone number"),
@@ -51,15 +124,18 @@ def list_agreements(
     return db.list_agreements(company=company, iin=iin, phone=phone, page=page, page_size=page_size)
 
 
+def _content_disposition(filename: str) -> str:
+    ascii_fallback = "".join(c if ord(c) < 128 else "_" for c in filename) or "file"
+    quoted_utf8 = urllib.parse.quote(filename)
+    return f'attachment; filename="{ascii_fallback}"; filename*=UTF-8\'\'{quoted_utf8}'
+
+
 @router.get("/agreements/{agreement_id}/download")
 def download_agreement(
     agreement_id: str,
     file_type: str = Query("pdf", pattern="^(pdf|docx)$"),
-    _: str = Depends(require_admin),
+    _: str = Depends(require_admin_session),
 ):
-    """Streams the file's bytes straight from Drive using the server's own
-    OAuth credentials — works no matter which Google account the admin is
-    logged into in their browser."""
     record = db.get_agreement(agreement_id)
     if not record:
         raise HTTPException(status_code=404, detail="Agreement not found")
@@ -78,22 +154,19 @@ def download_agreement(
     return Response(
         content=content,
         media_type=_MEDIA_TYPES[file_type],
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        headers={"Content-Disposition": _content_disposition(filename)},
     )
 
 
 @router.delete("/agreements/{agreement_id}")
 def delete_agreement(
     agreement_id: str,
-    _: str = Depends(require_admin),
+    _: str = Depends(require_admin_session),
 ):
     record = db.get_agreement(agreement_id)
     if not record:
         raise HTTPException(status_code=404, detail="Agreement not found")
 
-    # Delete both Drive files first. Only drop the DB row if that succeeds —
-    # otherwise a failed Drive delete would silently orphan the file with no
-    # record left to retry from.
     errors: list[str] = []
     for file_type, file_id in (
         ("docx", record["drive_docx_file_id"]),

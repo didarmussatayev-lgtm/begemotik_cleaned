@@ -8,14 +8,14 @@
   :root { --border: #e2e5ea; --accent: #1E4FA3; --text: #1c1f26; --muted: #6b7280; }
   * { box-sizing: border-box; }
   body { font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; background: #f7f8fa; color: var(--text); }
-  header { padding: 20px 28px; background: #fff; border-bottom: 1px solid var(--border); }
+  header { padding: 20px 28px; background: #fff; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
   h1 { font-size: 20px; margin: 0; }
   main { padding: 20px 28px; }
   .panel { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 18px; margin-bottom: 16px; }
   .filters { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
   .field { display: flex; flex-direction: column; gap: 4px; }
   .field label { font-size: 12px; color: var(--muted); }
-  input[type="text"] { padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; min-width: 180px; }
+  input[type="text"], input[type="password"] { padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; min-width: 180px; }
   button { padding: 9px 16px; border-radius: 6px; border: 1px solid var(--border); background: #fff; cursor: pointer; font-size: 14px; }
   button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
   button.danger { color: #b3261e; border-color: #f0c9c6; }
@@ -29,59 +29,95 @@
   .pagination span { font-size: 13px; color: var(--muted); }
   .empty, .error { padding: 24px; text-align: center; color: var(--muted); }
   .error { color: #b3261e; }
+
+  /* Login screen */
+  #loginScreen { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+  #loginBox { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 32px; width: 320px; }
+  #loginBox h2 { margin: 0 0 20px; font-size: 18px; }
+  #loginBox .field { margin-bottom: 14px; }
+  #loginBox input { width: 100%; }
+  #loginBox button { width: 100%; margin-top: 6px; }
+  #loginError { color: #b3261e; font-size: 13px; margin-top: 10px; min-height: 16px; }
+  #appScreen { display: none; }
 </style>
 </head>
 <body>
-<header><h1>Подписанные согласия</h1></header>
-<main>
-  <div class="panel filters">
-    <div class="field">
-      <label for="fIin">ИИН</label>
-      <input type="text" id="fIin" placeholder="Введите ИИН" />
-    </div>
-    <div class="field">
-      <label for="fPhone">Номер телефона</label>
-      <input type="text" id="fPhone" placeholder="Введите телефон" />
-    </div>
-    <button class="primary" id="searchBtn">Поиск</button>
-    <button id="resetBtn">Сбросить фильтр</button>
-  </div>
 
-  <div class="panel" style="padding:0; overflow-x:auto;">
-    <table>
-      <thead>
-        <tr>
-          <th>ИИН</th>
-          <th>ФИО</th>
-          <th>Номер телефона</th>
-          <th>Процедура</th>
-          <th>Дата рождения</th>
-          <th>Дата и время подписания</th>
-          <th>Файл</th>
-          <th>Действие</th>
-        </tr>
-      </thead>
-      <tbody id="tableBody"></tbody>
-    </table>
-    <div id="emptyState" class="empty" style="display:none;">Ничего не найдено</div>
-    <div id="errorState" class="error" style="display:none;"></div>
+<div id="loginScreen">
+  <div id="loginBox">
+    <h2>Вход в админ-панель</h2>
+    <form id="loginForm">
+      <div class="field">
+        <label for="loginUsername">Логин</label>
+        <input type="text" id="loginUsername" autocomplete="username" required />
+      </div>
+      <div class="field">
+        <label for="loginPassword">Пароль</label>
+        <input type="password" id="loginPassword" autocomplete="current-password" required />
+      </div>
+      <button class="primary" type="submit">Войти</button>
+      <div id="loginError"></div>
+    </form>
   </div>
+</div>
 
-  <div class="pagination">
-    <span id="totalLabel"></span>
-    <button id="prevBtn">‹</button>
-    <span id="pageLabel"></span>
-    <button id="nextBtn">›</button>
-  </div>
-</main>
+<div id="appScreen">
+  <header>
+    <h1>Подписанные согласия</h1>
+    <button id="logoutBtn">Выйти</button>
+  </header>
+  <main>
+    <div class="panel filters">
+      <div class="field">
+        <label for="fIin">ИИН</label>
+        <input type="text" id="fIin" placeholder="Введите ИИН" />
+      </div>
+      <div class="field">
+        <label for="fPhone">Номер телефона</label>
+        <input type="text" id="fPhone" placeholder="Введите телефон" />
+      </div>
+      <button class="primary" id="searchBtn">Поиск</button>
+      <button id="resetBtn">Сбросить фильтр</button>
+    </div>
+
+    <div class="panel" style="padding:0; overflow-x:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>ИИН</th>
+            <th>ФИО</th>
+            <th>Номер телефона</th>
+            <th>Процедура</th>
+            <th>Дата рождения</th>
+            <th>Дата и время подписания</th>
+            <th>Файл</th>
+            <th>Действие</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+      <div id="emptyState" class="empty" style="display:none;">Ничего не найдено</div>
+      <div id="errorState" class="error" style="display:none;"></div>
+    </div>
+
+    <div class="pagination">
+      <span id="totalLabel"></span>
+      <button id="prevBtn">‹</button>
+      <span id="pageLabel"></span>
+      <button id="nextBtn">›</button>
+    </div>
+  </main>
+</div>
 
 <script>
-// Same origin as this page — adjust if the dashboard is hosted separately
-// from the FastAPI backend.
 const API_BASE = '';
-
 let page = 1;
 const pageSize = 10;
+
+const loginScreen = document.getElementById('loginScreen');
+const appScreen = document.getElementById('appScreen');
+const loginForm = document.getElementById('loginForm');
+const loginError = document.getElementById('loginError');
 
 const els = {
   iin: document.getElementById('fIin'),
@@ -105,6 +141,56 @@ document.getElementById('resetBtn').addEventListener('click', () => {
 els.prevBtn.addEventListener('click', () => { if (page > 1) { page -= 1; load(); } });
 els.nextBtn.addEventListener('click', () => { page += 1; load(); });
 
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+  await fetch(`${API_BASE}/api/v1/admin/logout`, { method: 'POST', credentials: 'include' });
+  showLogin();
+});
+
+loginForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  loginError.textContent = '';
+  const username = document.getElementById('loginUsername').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  try {
+    const res = await fetch(`${API_BASE}/api/v1/admin/login`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.detail || 'Неверный логин или пароль');
+    }
+    showApp();
+  } catch (err) {
+    loginError.textContent = err.message || 'Не удалось войти';
+  }
+});
+
+function showLogin() {
+  loginScreen.style.display = 'flex';
+  appScreen.style.display = 'none';
+  document.getElementById('loginPassword').value = '';
+}
+
+function showApp() {
+  loginScreen.style.display = 'none';
+  appScreen.style.display = 'block';
+  page = 1;
+  load();
+}
+
+async function checkSession() {
+  try {
+    const res = await fetch(`${API_BASE}/api/v1/admin/me`, { credentials: 'include' });
+    if (res.ok) showApp();
+    else showLogin();
+  } catch (err) {
+    showLogin();
+  }
+}
+
 async function load() {
   els.error.style.display = 'none';
   const params = new URLSearchParams({
@@ -115,11 +201,10 @@ async function load() {
   });
 
   try {
-    // Browsers show their native Basic Auth prompt automatically on the
-    // first 401 from this endpoint — no custom login form needed.
     const res = await fetch(`${API_BASE}/api/v1/admin/agreements?${params}`, {
       credentials: 'include',
     });
+    if (res.status === 401) { showLogin(); return; }
     if (!res.ok) throw new Error(`Ошибка сервера (${res.status})`);
     const data = await res.json();
     render(data);
@@ -157,9 +242,7 @@ function render(data) {
   }
 
   els.body.querySelectorAll('[data-action="download"]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      window.open(`${API_BASE}/api/v1/admin/agreements/${btn.dataset.id}/download?file_type=pdf`, '_blank');
-    });
+    btn.addEventListener('click', () => onDownload(btn.dataset.id));
   });
 
   els.body.querySelectorAll('[data-action="delete"]').forEach((btn) => {
@@ -173,6 +256,32 @@ function render(data) {
   els.nextBtn.disabled = data.page >= lastPage;
 }
 
+async function onDownload(agreementId) {
+  try {
+    const res = await fetch(`${API_BASE}/api/v1/admin/agreements/${agreementId}/download?file_type=pdf`, {
+      credentials: 'include',
+    });
+    if (res.status === 401) { showLogin(); return; }
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.detail || `Ошибка сервера (${res.status})`);
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const disposition = res.headers.get('Content-Disposition') || '';
+    const match = disposition.match(/filename\*?=(?:UTF-8'')?["']?([^;"'\n]+)/i);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = match ? decodeURIComponent(match[1]) : `${agreementId}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  } catch (err) {
+    alert(err.message || 'Не удалось скачать файл');
+  }
+}
+
 async function onDelete(agreementId) {
   if (!confirm('Удалить это согласие безвозвратно?')) return;
   try {
@@ -180,6 +289,7 @@ async function onDelete(agreementId) {
       method: 'DELETE',
       credentials: 'include',
     });
+    if (res.status === 401) { showLogin(); return; }
     if (!res.ok) throw new Error(`Ошибка сервера (${res.status})`);
     load();
   } catch (err) {
@@ -205,7 +315,7 @@ function escapeHtml(value) {
   }[c]));
 }
 
-load();
+checkSession();
 </script>
 </body>
 </html>

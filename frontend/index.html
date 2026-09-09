@@ -118,11 +118,39 @@
               <div id="allergyText-error" class="error-text"></div>
             </div>
           </div>
+
           <div class="form-group">
-            <label for="procedure"><span data-i18n="labelProcedure">Проводимые процедуры</span> <span class="required">*</span></label>
-            <input type="text" id="procedure" placeholder="Укажите процедуру" />
+            <label><span data-i18n="labelProcedure">Проводимые процедуры</span> <span class="required">*</span></label>
+            <div id="procedureList" class="procedure-list">
+              <label class="procedure-item"><input type="checkbox" class="procedure-checkbox" value="Проф.осмотр" /> <span data-i18n="procCheckup">Проф.осмотр</span></label>
+              <label class="procedure-item"><input type="checkbox" class="procedure-checkbox" value="Педиатрический чекап" /> <span data-i18n="procPediatricCheckup">Педиатрический чекап</span></label>
+              <label class="procedure-item"><input type="checkbox" class="procedure-checkbox" value="Анализы" /> <span data-i18n="procTests">Анализы</span></label>
+              <label class="procedure-item"><input type="checkbox" class="procedure-checkbox" value="Кардио чекап" /> <span data-i18n="procCardioCheckup">Кардио чекап</span></label>
+              <label class="procedure-item"><input type="checkbox" class="procedure-checkbox" value="УЗИ" /> <span data-i18n="procUltrasound">УЗИ</span></label>
+              <label class="procedure-item"><input type="checkbox" class="procedure-checkbox" value="Операция" /> <span data-i18n="procSurgery">Операция</span></label>
+
+              <label class="procedure-item"><input type="checkbox" class="procedure-checkbox" value="Прием врача: педиатр" /> <span data-i18n="procDoctorPediatrician">Прием врача: педиатр</span></label>
+              <label class="procedure-item"><input type="checkbox" class="procedure-checkbox" value="Прием врача: хирург" /> <span data-i18n="procDoctorSurgeon">Прием врача: хирург</span></label>
+              <label class="procedure-item"><input type="checkbox" class="procedure-checkbox" value="Прием врача: невролог" /> <span data-i18n="procDoctorNeurologist">Прием врача: невролог</span></label>
+              <label class="procedure-item"><input type="checkbox" class="procedure-checkbox" value="Прием врача: ортопед" /> <span data-i18n="procDoctorOrthopedist">Прием врача: ортопед</span></label>
+              <label class="procedure-item"><input type="checkbox" class="procedure-checkbox" value="Прием врача: кардиолог" /> <span data-i18n="procDoctorCardiologist">Прием врача: кардиолог</span></label>
+              <label class="procedure-item"><input type="checkbox" class="procedure-checkbox" value="Прием врача: уролог" /> <span data-i18n="procDoctorUrologist">Прием врача: уролог</span></label>
+              <label class="procedure-item"><input type="checkbox" class="procedure-checkbox" value="Прием врача: офтальмолог" /> <span data-i18n="procDoctorOphthalmologist">Прием врача: офтальмолог</span></label>
+              <label class="procedure-item"><input type="checkbox" class="procedure-checkbox" value="Прием врача: лор врач" /> <span data-i18n="procDoctorENT">Прием врача: лор врач</span></label>
+              <label class="procedure-item"><input type="checkbox" class="procedure-checkbox" value="Прием врача: ревматолог" /> <span data-i18n="procDoctorRheumatologist">Прием врача: ревматолог</span></label>
+              <label class="procedure-item"><input type="checkbox" class="procedure-checkbox" value="Прием врача: аллерголог" /> <span data-i18n="procDoctorAllergist">Прием врача: аллерголог</span></label>
+              <label class="procedure-item"><input type="checkbox" class="procedure-checkbox" value="Прием врача: инфекционист" /> <span data-i18n="procDoctorInfectiologist">Прием врача: инфекционист</span></label>
+              <label class="procedure-item"><input type="checkbox" class="procedure-checkbox" value="Прием врача: пульмонолог" /> <span data-i18n="procDoctorPulmonologist">Прием врача: пульмонолог</span></label>
+              <label class="procedure-item"><input type="checkbox" class="procedure-checkbox" value="Прием врача: иммунолог" /> <span data-i18n="procDoctorImmunologist">Прием врача: иммунолог</span></label>
+
+              <label class="procedure-item"><input type="checkbox" class="procedure-checkbox" value="Обрезание" /> <span data-i18n="procCircumcision">Обрезание</span></label>
+              <label class="procedure-item"><input type="checkbox" class="procedure-checkbox" value="Снятие швов" /> <span data-i18n="procSutureRemoval">Снятие швов</span></label>
+              <label class="procedure-item"><input type="checkbox" class="procedure-checkbox" value="Промывание" /> <span data-i18n="procIrrigation">Промывание</span></label>
+              <label class="procedure-item"><input type="checkbox" class="procedure-checkbox" value="Подрезание уздечки" /> <span data-i18n="procFrenulumTrim">Подрезание уздечки</span></label>
+            </div>
             <div id="procedure-error" class="error-text"></div>
           </div>
+
           <div class="form-actions dual">
             <button type="button" id="backStep2" class="btn-secondary" data-i18n="btnBack">НАЗАД</button>
             <button type="button" id="nextStep2" class="btn-submit" data-i18n="btnNext">ДАЛЕЕ</button>

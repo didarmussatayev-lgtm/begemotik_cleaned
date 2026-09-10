@@ -79,6 +79,8 @@ const I18N = {
     errAllergyRequired: 'Укажите аллергию',
     errProcedureRequired: 'Выберите хотя бы одну процедуру',
     errSignatureRequired: 'Нарисуйте подпись',
+    errConsentFacsimileRequired: 'Необходимо дать согласие на использование факсимиле',
+    errConsentPersonalRequired: 'Необходимо дать согласие на сбор персональных данных',
   },
   kz: {
     start: 'БАСТАУ',
@@ -156,6 +158,8 @@ const I18N = {
     errAllergyRequired: 'Аллергияны көрсетіңіз',
     errProcedureRequired: 'Кемінде бір процедураны таңдаңыз',
     errSignatureRequired: 'Қол қойыңыз',
+    errConsentFacsimileRequired: 'Факсимилені пайдалануға келісім беру қажет',
+    errConsentPersonalRequired: 'Жеке деректерді жинауға келісім беру қажет',
   },
 };
 
@@ -405,7 +409,7 @@ function validateStep3() {
 
   const facsimileChecked = document.getElementById('consentFacsimile')?.checked ?? false;
   if (!facsimileChecked) {
-    document.getElementById('consentFacsimile-error').textContent = 'Необходимо дать согласие на использование факсимиле';
+    document.getElementById('consentFacsimile-error').textContent = t('errConsentFacsimileRequired');
     ok = false;
   } else {
     document.getElementById('consentFacsimile-error').textContent = '';
@@ -413,7 +417,7 @@ function validateStep3() {
 
   const personalChecked = document.getElementById('consentPersonal')?.checked ?? false;
   if (!personalChecked) {
-    document.getElementById('consentPersonal-error').textContent = 'Необходимо дать согласие на сбор персональных данных';
+    document.getElementById('consentPersonal-error').textContent = t('errConsentPersonalRequired');
     ok = false;
   } else {
     document.getElementById('consentPersonal-error').textContent = '';

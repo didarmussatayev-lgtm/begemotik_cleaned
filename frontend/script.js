@@ -402,6 +402,23 @@ function validateStep3() {
   } else {
     document.getElementById('signature-error').textContent = '';
   }
+
+  const facsimileChecked = document.getElementById('consentFacsimile')?.checked ?? false;
+  if (!facsimileChecked) {
+    document.getElementById('consentFacsimile-error').textContent = 'Необходимо дать согласие на использование факсимиле';
+    ok = false;
+  } else {
+    document.getElementById('consentFacsimile-error').textContent = '';
+  }
+
+  const personalChecked = document.getElementById('consentPersonal')?.checked ?? false;
+  if (!personalChecked) {
+    document.getElementById('consentPersonal-error').textContent = 'Необходимо дать согласие на сбор персональных данных';
+    ok = false;
+  } else {
+    document.getElementById('consentPersonal-error').textContent = '';
+  }
+
   return ok;
 }
 

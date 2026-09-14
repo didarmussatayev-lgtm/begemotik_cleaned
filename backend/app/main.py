@@ -16,7 +16,7 @@ from .admin import router as admin_router
 from .config import settings
 from . import db as agreements_db
 from .docgen import convert_to_pdf, generate_begemotik_docx
-from .drive import build_patient_filename_base, upload_documents
+from .r2 import build_patient_filename_base, upload_documents
 from .models import BegemotikAgreementRequest
 
 logging.basicConfig(
@@ -24,7 +24,7 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s %(name)s — %(message)s",
 )
 logger = logging.getLogger(__name__)
-logger.info("=== DEPLOY MARKER v5: reminders removed, begemotik model/docgen aligned ===")
+logger.info("=== DEPLOY MARKER v6: migrated storage from Google Drive to Cloudflare R2 ===")
 
 TEMPLATE_FILENAME = "begemotik_template.docx"
 
@@ -61,20 +61,26 @@ def health() -> dict:
     return {"status": "ok"}
 
 
-def _split_uploaded_ids(uploaded_ids: dict[str, str]) -> tuple[str, str]:
-    docx_file_id = ""
-    pdf_file_id = ""
-    for name, file_id in uploaded_ids.items():
+def _split_uploaded_keys(uploaded_keys: dict[str, str]) -> tuple[str, str]:
+    docx_key = ""
+    pdf_key = ""
+    for name, key in uploaded_keys.items():
         lower = name.lower()
         if lower.endswith(".docx"):
-            docx_file_id = file_id
+            docx_key = key
         elif lower.endswith(".pdf"):
-            pdf_file_id = file_id
-    return docx_file_id, pdf_file_id
+            pdf_key = key
+    return docx_key, pdf_key
 
 
-def _drive_view_link(file_id: str) -> str:
-    return f"https://drive.google.com/file/d/{file_id}/view" if file_id else ""
+def _r2_view_link(object_key: str) -> str:
+    """Build a direct link only if a public base URL is configured
+    (an r2.dev subdomain or a custom domain mapped to the bucket).
+    Otherwise leave empty — the admin dashboard downloads via the
+    server-side proxy (get_file_bytes) using the stored key instead."""
+    if not object_key or not settings.r2_public_base_url:
+        return ""
+    return f"{settings.r2_public_base_url.rstrip('/')}/{object_key}"
 
 
 def _parse_birthdate_iso(birthdate: str) -> str:
@@ -139,29 +145,29 @@ async def create_agreement(body: BegemotikAgreementRequest):
             logger.exception("PDF conversion failed for agreement %s", agreement_id)
             raise HTTPException(status_code=500, detail=f"PDF conversion failed: {exc}") from exc
 
-        drive_error: str | None = None
-        docx_file_id = ""
-        pdf_file_id = ""
-        if settings.google_drive_folder_id:
-            if settings.oauth_credentials_info:
-                try:
-                    uploaded_ids = upload_documents(
-                        file_paths=[docx_path, pdf_path],
-                        folder_id=settings.google_drive_folder_id,
-                        iin=body.iin,
-                        full_name=full_name,
-                        oauth_credentials_info=settings.oauth_credentials_info,
-                    )
-                    docx_file_id, pdf_file_id = _split_uploaded_ids(uploaded_ids)
-                except Exception as exc:
-                    drive_error = str(exc)
-                    logger.error("Drive upload failed for %s: %s", patient_file_base, exc)
-            else:
-                logger.warning("Google Drive OAuth credentials not set — skipping Drive upload")
+        storage_error: str | None = None
+        docx_key = ""
+        pdf_key = ""
+        if settings.r2_credentials_info:
+            try:
+                uploaded_keys = upload_documents(
+                    file_paths=[docx_path, pdf_path],
+                    folder_id=settings.r2_folder_prefix,
+                    iin=body.iin,
+                    full_name=full_name,
+                    r2_credentials_info=settings.r2_credentials_info,
+                )
+                docx_key, pdf_key = _split_uploaded_keys(uploaded_keys)
+            except Exception as exc:
+                storage_error = str(exc)
+                logger.error("R2 upload failed for %s: %s", patient_file_base, exc)
         else:
-            logger.warning("GOOGLE_DRIVE_FOLDER_ID not set — skipping Drive upload")
+            logger.warning("R2 credentials not fully set — skipping R2 upload")
 
         try:
+            # Note: these DB columns are named drive_* for historical reasons —
+            # they now hold R2 object keys / links instead of Google Drive
+            # file ids / view links. Left as-is to avoid a schema migration.
             agreements_db.insert_agreement(
                 agreement_id=agreement_id,
                 full_name=full_name,
@@ -170,18 +176,18 @@ async def create_agreement(body: BegemotikAgreementRequest):
                 procedure=body.procedure,
                 template_key="begemotik",
                 date_of_birth=_parse_birthdate_iso(body.birthdate),
-                drive_docx_file_id=docx_file_id,
-                drive_pdf_file_id=pdf_file_id,
-                drive_docx_link=_drive_view_link(docx_file_id),
-                drive_pdf_link=_drive_view_link(pdf_file_id),
-                drive_upload_error=drive_error or "",
+                drive_docx_file_id=docx_key,
+                drive_pdf_file_id=pdf_key,
+                drive_docx_link=_r2_view_link(docx_key),
+                drive_pdf_link=_r2_view_link(pdf_key),
+                drive_upload_error=storage_error or "",
             )
         except Exception:
             logger.exception("Failed to write DB record for agreement %s", agreement_id)
 
         headers: dict[str, str] = {}
-        if drive_error:
-            headers["X-Drive-Error"] = drive_error[:200]
+        if storage_error:
+            headers["X-Storage-Error"] = storage_error[:200]
 
         return FileResponse(
             path=str(pdf_path),

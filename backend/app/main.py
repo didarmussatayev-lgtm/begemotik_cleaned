@@ -187,7 +187,12 @@ async def create_agreement(body: BegemotikAgreementRequest):
 
         headers: dict[str, str] = {}
         if storage_error:
-            headers["X-Storage-Error"] = storage_error[:200]
+            # HTTP headers must be latin-1; error text can contain the
+            # (Cyrillic) filename, so strip anything non-ASCII instead of
+            # crashing the whole response.
+            safe_error = storage_error.encode("ascii", "ignore").decode("ascii")[:200]
+            if safe_error:
+                headers["X-Storage-Error"] = safe_error
 
         return FileResponse(
             path=str(pdf_path),

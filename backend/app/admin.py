@@ -12,7 +12,7 @@ import urllib.parse
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Query, Response
 from pydantic import BaseModel
 
-from . import db, drive
+from . import db, r2
 from .config import settings
 
 logger = logging.getLogger(__name__)
@@ -140,15 +140,17 @@ def download_agreement(
     if not record:
         raise HTTPException(status_code=404, detail="Agreement not found")
 
-    file_id = record["drive_pdf_file_id"] if file_type == "pdf" else record["drive_docx_file_id"]
-    if not file_id:
+    # These DB columns are named drive_* for historical reasons — they now
+    # hold R2 object keys instead of Google Drive file ids.
+    object_key = record["drive_pdf_file_id"] if file_type == "pdf" else record["drive_docx_file_id"]
+    if not object_key:
         raise HTTPException(status_code=404, detail=f"No {file_type} stored for this agreement")
 
     try:
-        content = drive.get_file_bytes(file_id, settings.oauth_credentials_info)
+        content = r2.get_file_bytes(object_key, settings.r2_credentials_info)
     except Exception as exc:
         logger.exception("Failed to download %s for agreement %s", file_type, agreement_id)
-        raise HTTPException(status_code=502, detail=f"Drive download failed: {exc}") from exc
+        raise HTTPException(status_code=502, detail=f"R2 download failed: {exc}") from exc
 
     filename = f"{record['iin']}_{record['full_name']}.{file_type}"
     return Response(
@@ -168,22 +170,22 @@ def delete_agreement(
         raise HTTPException(status_code=404, detail="Agreement not found")
 
     errors: list[str] = []
-    for file_type, file_id in (
+    for file_type, object_key in (
         ("docx", record["drive_docx_file_id"]),
         ("pdf", record["drive_pdf_file_id"]),
     ):
-        if not file_id:
+        if not object_key:
             continue
         try:
-            drive.delete_file(file_id, settings.oauth_credentials_info)
+            r2.delete_file(object_key, settings.r2_credentials_info)
         except Exception as exc:
-            logger.exception("Failed to delete Drive %s file for agreement %s", file_type, agreement_id)
+            logger.exception("Failed to delete R2 %s file for agreement %s", file_type, agreement_id)
             errors.append(f"{file_type}: {exc}")
 
     if errors:
         raise HTTPException(
             status_code=502,
-            detail=f"Could not delete from Drive, DB record kept: {'; '.join(errors)}",
+            detail=f"Could not delete from R2, DB record kept: {'; '.join(errors)}",
         )
 
     deleted = db.delete_agreement(agreement_id)

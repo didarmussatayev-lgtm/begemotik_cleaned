@@ -19,13 +19,19 @@ class Settings(BaseSettings):
     # CORS — comma-separated list of origins, e.g. "https://user.github.io,http://localhost:5500"
     cors_origins: str = "*"
 
-    # Google Drive
-    google_drive_folder_id: str = ""
+    # --- Cloudflare R2 (S3-compatible object storage) ---
+    r2_account_id: str = ""
+    r2_access_key_id: str = ""
+    r2_secret_access_key: str = ""
+    r2_bucket_name: str = ""
 
-    # --- OAuth user-delegated auth (required for personal Gmail Drive quota) ---
-    google_oauth_client_id: str = ""
-    google_oauth_client_secret: str = ""
-    google_oauth_refresh_token: str = ""
+    # Optional: key prefix inside the bucket, analogous to the old Drive folder.
+    r2_folder_prefix: str = ""
+
+    # Optional: public base URL for direct links (e.g. an r2.dev subdomain or a
+    # custom domain mapped to the bucket). Leave empty if the bucket is private —
+    # in that case only the admin dashboard's proxied download will work.
+    r2_public_base_url: str = ""
 
     # --- Admin dashboard (list/download/delete signed agreements) ---
     admin_username: str = ""
@@ -48,17 +54,19 @@ class Settings(BaseSettings):
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
 
     @property
-    def oauth_credentials_info(self) -> dict | None:
-        """Return OAuth client info dict if all three OAuth vars are set, else None."""
+    def r2_credentials_info(self) -> dict | None:
+        """Return R2 credentials dict if all required vars are set, else None."""
         if (
-            self.google_oauth_client_id.strip()
-            and self.google_oauth_client_secret.strip()
-            and self.google_oauth_refresh_token.strip()
+            self.r2_account_id.strip()
+            and self.r2_access_key_id.strip()
+            and self.r2_secret_access_key.strip()
+            and self.r2_bucket_name.strip()
         ):
             return {
-                "client_id": self.google_oauth_client_id.strip(),
-                "client_secret": self.google_oauth_client_secret.strip(),
-                "refresh_token": self.google_oauth_refresh_token.strip(),
+                "account_id": self.r2_account_id.strip(),
+                "access_key_id": self.r2_access_key_id.strip(),
+                "secret_access_key": self.r2_secret_access_key.strip(),
+                "bucket_name": self.r2_bucket_name.strip(),
             }
         return None
 
